@@ -7,7 +7,6 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use ed25519_dalek::{Keypair, PublicKey, Signature, Signer, Verifier, SECRET_KEY_LENGTH};
-use rand::rngs::OsRng;
 use std::net::SocketAddr;
 use bs58;
 use thiserror::Error;
@@ -20,9 +19,18 @@ async fn main() {
         .route("/message/sign", post(sign_message))
         .route("/message/verify", post(verify_message));
 
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    // Get PORT from env (Render sets it automatically)
+    let port = std::env::var("PORT")
+        .unwrap_or_else(|_| "3000".to_string())  // fallback for local
+        .parse::<u16>()
+        .expect("Invalid PORT");
+
+    let addr = SocketAddr::from(([0, 0, 0, 0], port)); // bind to 0.0.0.0 for Render
     println!("Server running at http://{}", addr);
-    axum::serve(tokio::net::TcpListener::bind(addr).await.unwrap(), app).await.unwrap();
+
+    axum::serve(tokio::net::TcpListener::bind(addr).await.unwrap(), app)
+        .await
+        .unwrap();
 }
 
 // Response Wrapper
